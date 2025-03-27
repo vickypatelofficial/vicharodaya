@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "537815222703",
+    "project_id": "vicharodaya-news-2cfd0",
+    "storage_bucket": "vicharodaya-news-2cfd0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537815222703:android:5e9202368dc9b32f8c875a",
+        "android_client_info": {
+          "package_name": "com.vicharodayamews.newsvicharodaya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8nmgfD6lZLZdl1SZMOk2ncEhxXw18OIw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
