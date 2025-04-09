@@ -3,55 +3,83 @@ import 'package:flutter/services.dart';
 import 'dart:async'; // For Timer
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+//code commented(previous)
+// OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+// OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
 
+// // Handle Notification Click
+// OneSignal.Notifications.addClickListener((event) async {
+//   _handleNotificationClick(event);
+// });
+
+// OneSignal.Notifications.requestPermission(true);
+
+//code(new)
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-  OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
-
-  // Handle Notification Click
-  OneSignal.Notifications.addClickListener((event) async {
-    _handleNotificationClick(event);
-  });
-
-  OneSignal.Notifications.requestPermission(true);
+    OneSignal.Debug.setAlertLevel(OSLogLevel.none);
+    OneSignal.consentRequired(false);
+    OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
+    OneSignal.Notifications.requestPermission(true);
+    OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+      print('NOTIFICATION WILL DISPLAY LISTENER CALLED WITH: ${event.notification.jsonRepresentation()}');
+      event.preventDefault();
+      event.notification.display();
+    });
 
   runApp(MyApp());
 }
 
-void _handleNotificationClick(OSNotificationClickEvent event) {
-  final String? url = event.notification.launchUrl;
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  if (url != null && url.isNotEmpty) {
-    // Use this to handle the URL when app is in background/closed
-    MyApp.navigatorKey.currentState?.openWebView(url);
-  }
-}
+// void main() {
+//   WidgetsFlutterBinding.ensureInitialized();
 
-class MyApp extends StatefulWidget {
-  static final GlobalKey<_MyAppState> navigatorKey = GlobalKey();
+//   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+//   OneSignal.Debug.setAlertLevel(OSLogLevel.none);
+//   OneSignal.consentRequired(false);
+//   OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
+//   OneSignal.Notifications.requestPermission(true);
 
-  static void openWebViewUrl(String url) {
-    navigatorKey.currentState?.openWebView(url);
-  }
+//   // Foreground display
+//   OneSignal.Notifications.addForegroundWillDisplayListener((event){
+//     print(
+//         'NOTIFICATION WILL DISPLAY LISTENER CALLED WITH: ${event.notification.jsonRepresentation()}');
+//     event.preventDefault();
+//     event.notification.display();
+//   });
 
-  @override
-  _MyAppState createState() => _MyAppState();
-}
+//   // Handle notification clicks
+//   OneSignal.Notifications.addClickListener((event) {
+//     print('clicked notification');
+//     String? url = event.notification.launchUrl;
 
-class _MyAppState extends State<MyApp> {
-  String? _launchUrl;
+//     try {
+//       print('+++++++url++++++');
+//       if (url != null) {
+//         print('+++++++enter in try++++++');
+//         WidgetsBinding.instance.addPostFrameCallback((_) {
+//           navigatorKey.currentState?.push(
+//             MaterialPageRoute(builder: (context) => SplashScreen()),
+//           );
+//         });
+//       }
+//     } catch (e) {
+//       print('=========================');
+//       print(e.toString());
+//     }
+//   });
 
-  void openWebView(String url) {
-    setState(() {
-      _launchUrl = url;
-    });
-  }
+//   runApp(MyApp());
+// }
 
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       home: SplashScreen(),
     );
@@ -120,7 +148,7 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
     "https://vicharodaya.com/",
     "https://vicharodaya.com/category/latest-update/",
     "https://vicharodaya.com/web-stories/",
-    "https://www.youtube.com/channel/UCs6Ixn7lpxGOsOxLfbpmnyg",
+    "https://youtube.com/@vicharodaya?si=xan0cXfWowfkVVQ9",
   ];
 
   @override
@@ -235,84 +263,54 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
 }
 
 Future<dynamic> showExitConfirmationDialog(BuildContext context) async {
-  double screenWidth = MediaQuery.of(context).size.width;
-  double screenHeight = MediaQuery.of(context).size.height;
-  Widget mediumHeight = SizedBox(
-    height: 10,
-  );
   return showDialog(
         context: context,
-        builder: (context) => Dialog(
-          elevation: 10,
-          backgroundColor: Colors.white,
-          child: Container(
-            height: 150.0,
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                mediumHeight,
-                const Expanded(child: SizedBox(height: 20)),
-                Padding(
-                  padding: EdgeInsets.only(left: screenWidth * .1),
-                  child: const Row(
-                    children: [
-                      // Image.asset(LocalImages.exit,height: 20,width: 20,),
-                      Text('Exit',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
-                            letterSpacing: 0.0,
-                          )),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: screenWidth * .1, right: screenWidth * .1),
-                  child: const Column(
-                    children: [
-                      SizedBox(height: 10),
-                      Text('Are you sure you want to exit the application?'),
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text(
-                        'NO',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge!
-                            .copyWith(color: Colors.green),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    TextButton(
-                      onPressed: () => SystemNavigator.pop(),
-                      child: Text(
-                        'EXIT NOW',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge!
-                            .copyWith(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(child: const SizedBox(height: 20)),
-                SizedBox(
-                  width: 10,
-                ),
-              ],
-            ),
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titlePadding: const EdgeInsets.all(20),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          title: const Column(
+            children: [
+              Icon(Icons.exit_to_app, size: 50, color: Colors.redAccent),
+              SizedBox(height: 10),
+              Text(
+                'Exit Application?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
+          content: const Text(
+            'Are you sure you want to exit?',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(context).pop(false),
+              child:
+                  const Text('Cancel', style: TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => SystemNavigator.pop(),
+              child: const Text('Exit', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
       ) ??
       false;
