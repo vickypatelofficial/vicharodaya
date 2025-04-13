@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async'; // For Timer
@@ -15,24 +17,89 @@ import 'package:webview_flutter/webview_flutter.dart';
 // OneSignal.Notifications.requestPermission(true);
 
 //code(new)
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-    OneSignal.Debug.setAlertLevel(OSLogLevel.none);
-    OneSignal.consentRequired(false);
-    OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
-    OneSignal.Notifications.requestPermission(true);
-    OneSignal.Notifications.addForegroundWillDisplayListener((event) {
-      print('NOTIFICATION WILL DISPLAY LISTENER CALLED WITH: ${event.notification.jsonRepresentation()}');
-      event.preventDefault();
-      event.notification.display();
-    });
-
-  runApp(MyApp());
-}
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await Firebase.initializeApp();
+//   FirebaseMessaging.instance.getInitialMessage();
+//   RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+// //   // OneSignal setup
+// //   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+// //   OneSignal.Debug.setAlertLevel(OSLogLevel.none);
+// //   OneSignal.consentRequired(false);
+// //   OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
+// //   OneSignal.Notifications.requestPermission(true);
+
+// //   // Show notification in foreground
+// //   OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+// //     print('NOTIFICATION WILL DISPLAY LISTENER CALLED WITH: ${event.notification.jsonRepresentation()}');
+// //     event.preventDefault();
+// //     event.notification.display();
+// //   });
+
+// //   // Handle notification click
+// //  OneSignal.Notifications.addClickListener((event) {
+// //   print('🔔 Notification Clicked');
+
+// //   // Access the custom data
+// //   final additionalData = event.notification.additionalData;
+// //   final url = additionalData?['target_url'];
+
+// //   if (url != null) {
+// //     print('🌐 Opening URL in WebView: $url');
+
+// //     WidgetsBinding.instance.addPostFrameCallback((_) {
+// //       navigatorKey.currentState?.push(
+// //         MaterialPageRoute(
+// //           builder: (context) => SplashScreen(),
+// //         ),
+// //       );
+// //     });
+// //   } else {
+// //     print('⚠️ No target_url found in notification');
+// //   }
+// // });
+
+//   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+//     final targetUrl = message.data['target_url'];
+//     if (targetUrl != null) {
+//       WidgetsBinding.instance.addPostFrameCallback((_) {
+//         navigatorKey.currentState?.push(
+//           MaterialPageRoute(
+//             builder: (context) => SplashScreen(),
+//           ),
+//         );
+//       });
+//     }
+//   });
+
+//   runApp(MyApp());
+// }
+
+void main() async {
+  runApp(MyApp());
+
+  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+  OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
+
+  // Ask for permission (iOS only)
+  OneSignal.Notifications.requestPermission(true);
+
+  // Handle notification opens
+  OneSignal.Notifications.addClickListener((event) {
+    print("Notification clicked: ${event.notification.jsonRepresentation()}");
+
+    // Handle deep linking here
+    final url = event.notification.launchUrl;
+    if (url != null){
+      // Navigate inside your app or show a WebView
+      print("Navigate to: $url");
+    }
+  });
+}
+
+// final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // void main() {
 //   WidgetsFlutterBinding.ensureInitialized();
