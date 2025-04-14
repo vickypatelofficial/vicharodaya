@@ -78,8 +78,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 // }
 
 void main() async {
-  runApp(MyApp());
-
+   runApp(MyApp());
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
 
@@ -92,11 +91,21 @@ void main() async {
 
     // Handle deep linking here
     final url = event.notification.launchUrl;
-    if (url != null){
-      // Navigate inside your app or show a WebView
-      print("Navigate to: $url");
+    if (url != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => SplashScreen(),
+          ),
+        );
+      });
+    } else {
+      print('⚠️ No target_url found in notification');
     }
+    // Navigate inside your app or show a WebView
+    // print("Navigate to: $url");
   });
+ 
 }
 
 // final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
