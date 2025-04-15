@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -76,8 +78,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 //   runApp(MyApp());
 // }
 
-
-
 // final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // void main() {
@@ -121,36 +121,67 @@ import 'package:webview_flutter/webview_flutter.dart';
 //   runApp(MyApp());
 // }
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+dynamic dataNotification;
 void main() async {
-   runApp(MyApp());
+  runApp(MyApp());
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
 
   // Ask for permission (iOS only)
   OneSignal.Notifications.requestPermission(true);
 
-  // Handle notification opens
-  OneSignal.Notifications.addClickListener((event) {
-    print("Notification clicked: ${event.notification.jsonRepresentation()}");
 
-    // Handle deep linking here
-    final url = event.notification.launchUrl;
-    if (url != null) {
-     WidgetsBinding.instance.addPostFrameCallback((_) {
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => WebViewWithBottomNav(initialUrl: url),
-        ),
-      );
-    });
-    } else {
-      print('⚠️ No target_url found in notification');
-    }
-    // Navigate inside your app or show a WebView
-    // print("Navigate to: $url");
-  });
+
+
+  ////
+  //////
+
+  // Handle notification opens
+
  
+  OneSignal.Notifications.addClickListener((event) async {
+    print("🔔 Notification clicked");
+
+    try {
+      // Step 1: Get the full raw payload
+      final rawPayload = event.notification.rawPayload;
+      print("📦 Raw Payload: $rawPayload");
+
+      // Step 2: Get the 'custom' field (it's a JSON string inside the map)
+      final customRawString = rawPayload?['custom'];
+      print("🧩 Raw 'custom' string: $customRawString");
+
+      if (customRawString != null) {
+        // Step 3: Decode the custom JSON string
+        final customMap = jsonDecode(customRawString);
+        print("✅ Decoded 'custom' map: $customMap");
+        dataNotification = customMap;
+        // Step 4: Extract target_url
+        // final targetUrl = customMap['a']?['target_url'];
+        // print("🌐 target_url: $targetUrl");
+
+        if (dataNotification['a']['target_url'].toString() != "null") {
+          // Step 5: Navigate to WebView screen
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => WebViewWithBottomNav(
+                    initialUrl: dataNotification['a']['target_url'].toString()),
+              ),
+            );
+          });
+        } else {
+          print("⚠️ 'target_url' not found in custom map");
+        }
+      } else {
+        print("⚠️ 'custom' not found in rawPayload");
+      }
+    } catch (e) {
+      print("❌ Error parsing notification: $e");
+    }
+  });
 }
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -176,13 +207,14 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => WebViewWithBottomNav(),
+          builder: (context) => const WebViewWithBottomNav(
+            // initialUrl:
+            //     'https://vicharodaya.com/latest-update/jain-muni-nepa-nagar/',
+          ),
         ),
       );
     });
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -212,15 +244,13 @@ class _SplashScreenState extends State<SplashScreen> {
 // MAIN APP WITH WEBVIEW & BOTTOM NAVIGATION
 class WebViewWithBottomNav extends StatefulWidget {
   const WebViewWithBottomNav({super.key, this.initialUrl});
-   final String? initialUrl;
+  final String? initialUrl;
   @override
   // ignore: library_private_types_in_public_api
   _WebViewWithBottomNavState createState() => _WebViewWithBottomNavState();
 }
 
 class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
-  
-   
   late final WebViewController _controller;
   int _selectedIndex = 0;
 
@@ -234,22 +264,29 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
   @override
   void initState() {
     super.initState();
-     _controller = WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..loadRequest(Uri.parse(widget.initialUrl ?? _urls[_selectedIndex])); 
+    // _controller = WebViewController()
+    //   ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    //   ..loadRequest(Uri.parse(widget.initialUrl ?? _urls[_selectedIndex]));
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(widget.initialUrl ?? _urls[_selectedIndex]));
   }
 
   // Inside WebViewWithBottomNav
-@override
-void didChangeDependencies() {
-  super.didChangeDependencies();
-  if (widget.initialUrl != null) {
-    // It's from notification, no bottom nav selection should happen.
-    _selectedIndex = -1; // or keep as-is
-  }
-}
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   if (widget.initialUrl != null) {
+  //     // It's from notification, no bottom nav selection should happen.
+  //     _selectedIndex = -1; // or keep as-is
+  //   }
+  // }
 
   void _onItemTapped(int index) {
+    print('++++++++taped+++++++');
+    print(dataNotification.runtimeType);
+    print(dataNotification['a']['target_url'].toString());
+
     setState(() {
       _selectedIndex = index;
       _controller.loadRequest(Uri.parse(_urls[index]));
