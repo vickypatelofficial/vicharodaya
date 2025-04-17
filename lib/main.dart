@@ -120,64 +120,41 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 //   runApp(MyApp());
 // }
+Map<String, dynamic>? initialNotificationData;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-dynamic dataNotification;
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
+
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
-
-  // Ask for permission (iOS only)
   OneSignal.Notifications.requestPermission(true);
 
-
-
-
-  ////
-  //////
-
-  // Handle notification opens
-
- 
   OneSignal.Notifications.addClickListener((event) async {
     print("🔔 Notification clicked");
 
-    try {
-      // Step 1: Get the full raw payload
-      final rawPayload = event.notification.rawPayload;
-      print("📦 Raw Payload: $rawPayload");
+    final rawPayload = event.notification.rawPayload;
+    final customRawString = rawPayload?['custom'];
 
-      // Step 2: Get the 'custom' field (it's a JSON string inside the map)
-      final customRawString = rawPayload?['custom'];
-      print("🧩 Raw 'custom' string: $customRawString");
+    if (customRawString != null) {
+      final customMap = jsonDecode(customRawString);
+      final targetUrl = customMap['a']['target_url'];
 
-      if (customRawString != null) {
-        // Step 3: Decode the custom JSON string
-        final customMap = jsonDecode(customRawString);
-        print("✅ Decoded 'custom' map: $customMap");
-        dataNotification = customMap;
-        // Step 4: Extract target_url
-        // final targetUrl = customMap['a']?['target_url'];
-        // print("🌐 target_url: $targetUrl");
+      if (targetUrl != null && targetUrl != "null") {
+        // Save the data temporarily
+        initialNotificationData = {'target_url': targetUrl};
 
-        if (dataNotification['a']['target_url'].toString() != "null") {
-          // Step 5: Navigate to WebView screen
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => WebViewWithBottomNav(
-                    initialUrl: dataNotification['a']['target_url'].toString()),
+        // If app is already running, navigate immediately
+        if (navigatorKey.currentState != null) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => WebViewWithBottomNav(
+                initialUrl: targetUrl,
               ),
-            );
-          });
-        } else {
-          print("⚠️ 'target_url' not found in custom map");
+            ),
+          );
         }
-      } else {
-        print("⚠️ 'custom' not found in rawPayload");
       }
-    } catch (e) {
-      print("❌ Error parsing notification: $e");
     }
   });
 }
@@ -204,15 +181,25 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const WebViewWithBottomNav(
-            // initialUrl:
-            //     'https://vicharodaya.com/latest-update/jain-muni-nepa-nagar/',
+      // if (initialNotificationData != null &&
+      //     initialNotificationData!['target_url'] != null) {
+      //   Navigator.pushReplacement(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (context) => WebViewWithBottomNav(
+      //         initialUrl: initialNotificationData!['target_url'],
+      //       ),
+      //     ),
+      //   );
+      //   initialNotificationData = null; // Clear after use
+      // } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const WebViewWithBottomNav(),
           ),
-        ),
-      );
+        );
+      // }
     });
   }
 
@@ -283,9 +270,9 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
   // }
 
   void _onItemTapped(int index) {
-    print('++++++++taped+++++++');
-    print(dataNotification.runtimeType);
-    print(dataNotification['a']['target_url'].toString());
+    // print('++++++++taped+++++++');
+    // print(dataNotification.runtimeType);
+    // print(dataNotification['a']['target_url'].toString());
 
     setState(() {
       _selectedIndex = index;
