@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async'; // For Timer
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -122,9 +123,35 @@ import 'package:webview_flutter/webview_flutter.dart';
 // }
 Map<String, dynamic>? initialNotificationData;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+const platform = MethodChannel("onesignal/launch");
+Future<String?> getInitialUrlFromNative() async {
+  try {
+    const platform = MethodChannel('onesignal/launch');
+    final initialUrl = await platform.invokeMethod('getInitialUrl');
+    return initialUrl as String?;
+  } on PlatformException catch (e) {
+    print("Failed to get initial URL: ${e.message}");
+    return null;
+  }
+}
+
+void handleNotificationUrl(String url) {
+  Fluttertoast.showToast(
+    msg: "Notification URL: $url",
+    toastLength: Toast.LENGTH_LONG,
+    gravity: ToastGravity.BOTTOM,
+    backgroundColor: Colors.black87,
+    textColor: Colors.white,
+  );
+
+  navigatorKey.currentState?.push(MaterialPageRoute(
+    builder: (context) => WebViewWithBottomNav(initialUrl: url),
+  ));
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
 
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("7737912d-e7a0-4fcf-a063-1c2896d52b13");
@@ -157,6 +184,44 @@ void main() async {
       }
     }
   });
+
+  // String? targetUrl;
+
+  // try {
+  //   // Listen for launchFromNotification call from Kotlin
+  //   platform.setMethodCallHandler((call) async {
+  //     if (call.method == "launchFromNotification") {
+  //       final url = call.arguments as String?;
+  //       Fluttertoast.showToast(
+  //           msg: "Notification URL: ${url.toString()}",
+  //           toastLength: Toast.LENGTH_LONG,
+  //           gravity: ToastGravity.BOTTOM,
+  //           backgroundColor: Colors.black87,
+  //           textColor: Colors.white,
+  //         );
+  //       if (url != null) {
+  //         print("📲 App launched from notification with URL: $url");
+  //         targetUrl = url;
+  //         Fluttertoast.showToast(
+  //           msg: "Notification URL: $url",
+  //           toastLength: Toast.LENGTH_LONG,
+  //           gravity: ToastGravity.BOTTOM,
+  //           backgroundColor: Colors.black87,
+  //           textColor: Colors.white,
+  //         );
+
+  //         // Here you can navigate to WebView or any screen with this URL
+  //         navigatorKey.currentState?.push(MaterialPageRoute(
+  //           builder: (context) => WebViewWithBottomNav(initialUrl: url),
+  //         ));
+  //       }
+  //     }
+  //   });
+  // } on PlatformException catch (e) {
+  //   print("❌ Failed to get target URL from native: ${e.message}");
+  // }
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -193,12 +258,12 @@ class _SplashScreenState extends State<SplashScreen> {
       //   );
       //   initialNotificationData = null; // Clear after use
       // } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const WebViewWithBottomNav(),
-          ),
-        );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const WebViewWithBottomNav(),
+        ),
+      );
       // }
     });
   }
@@ -248,6 +313,9 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
     "https://youtube.com/@vicharodaya?si=xan0cXfWowfkVVQ9",
   ];
 
+  String? _initialUrl;
+  final MethodChannel _channel = const MethodChannel('onesignal/launch');
+
   @override
   void initState() {
     super.initState();
@@ -257,8 +325,10 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..loadRequest(Uri.parse(widget.initialUrl ?? _urls[_selectedIndex]));
-  }
 
+    // _initializeNotificationHandling();
+  }
+\
   // Inside WebViewWithBottomNav
   // @override
   // void didChangeDependencies() {
@@ -278,6 +348,60 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
       _selectedIndex = index;
       _controller.loadRequest(Uri.parse(_urls[index]));
     });
+  }
+
+  Future<void> _initializeNotificationHandling() async {
+    Fluttertoast.showToast(
+      msg: "initializing",
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+    );
+    // 1. Setup handler for when app is in foreground/background
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == "launchFromNotification") {
+        _handleNotificationUrl(call.arguments as String);
+      }
+    });
+
+    // 2. Check for initial URL when app is launched from terminated state
+    try {
+      final url = await _channel.invokeMethod('getInitialUrl');
+      if (url != null && url is String) {
+        Fluttertoast.showToast(
+          msg: "${url.toString()}",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black87,
+          textColor: Colors.white,
+        );
+        if (mounted) {
+          setState(() {
+            _initialUrl = url;
+          });
+          _handleNotificationUrl(url);
+        }
+      }
+    } on PlatformException catch (e) {
+      debugPrint("Failed to get initial URL: ${e.message}");
+    }
+  }
+  
+  void _handleNotificationUrl(String url) {
+    debugPrint("Handling notification URL: $url");
+    Fluttertoast.showToast(
+      msg: "Notification URL: $url",
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+    );
+    // Add your navigation logic here
+    // For example:
+    // Navigator.of(context).push(MaterialPageRoute(
+    //   builder: (context) => WebViewScreen(url: url),
+    // ));
   }
 
   @override

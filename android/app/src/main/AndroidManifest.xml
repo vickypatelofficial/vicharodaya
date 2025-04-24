@@ -41,6 +41,7 @@
          <category android:name="android.intent.category.DEFAULT"/>
          <category android:name="android.intent.category.BROWSABLE"/>
          <data android:scheme="https" android:host="vicharodaya.com"/>
+         <data android:scheme="onesignal" android:host="open" />
   </intent-filter>
   <intent-filter>
         <action android:name="com.onesignal.NotificationOpened.RECEIVE" />
