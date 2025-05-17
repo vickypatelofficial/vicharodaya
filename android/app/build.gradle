@@ -1,13 +1,14 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id "dev.flutter.flutter-gradle-plugin"
+    plugins {
+id "com.android.application"
+id "kotlin-android"
+id "dev.flutter.flutter-gradle-plugin"
+id 'com.google.gms.google-services' // Apply this plugin
 }
+
 
 android {
     namespace = "com.vicharodayamews.newsvicharodaya"
-    compileSdkVersion 34
+    compileSdkVersion 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -43,3 +44,10 @@ android {
 flutter {
     source = "../.."
 }
+
+    dependencies {
+        // ... your other dependencies ...
+        implementation platform('com.google.firebase:firebase-bom:32.3.1') // Or the latest BOM
+        implementation 'com.google.firebase:firebase-analytics-ktx' // Optional, but recommended for analytics
+        implementation 'com.google.firebase:firebase-messaging-ktx'
+    }
