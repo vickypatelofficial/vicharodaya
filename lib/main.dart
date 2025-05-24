@@ -352,7 +352,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-
   @override
   void initState() {
     super.initState();
@@ -363,10 +362,10 @@ class _MyAppState extends State<MyApp> {
       print("Firebase Token: $token");
     });
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("onMessage: $message");
-      // Handle the message when the app is in the foreground.
-    });
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    //   print("onMessage: $message");
+    //   // Handle the message when the app is in the foreground.
+    // });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('++++++++++++++++onMessageOpenedApp+++++++++');
@@ -378,21 +377,7 @@ class _MyAppState extends State<MyApp> {
       //Get.to(NotificationScreen());
     });
     // // When app is opened directly after being killed
-    killedFunc();
-  }
-
-  Future<void> killedFunc() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
-
-    if (initialMessage != null) {
-      await prefs.setString(
-          'cold_start_message', initialMessage.data.toString());
-      _handleMessage(initialMessage);
-    } else {
-      await prefs.setString('cold_start_message', 'No initial message');
-    }
+    // killedFunc();
   }
 
   @override
@@ -439,10 +424,50 @@ class _SplashScreenState extends State<SplashScreen> {
     //   );
     //   // }
     // });
-    checkColdStartLog();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      codeStartFunction();
+    });
   }
 
-  void checkColdStartLog() async {
+  Future<void> codeStartFunction() async {
+    await killedFunc();
+    // await checkColdStartLog();
+  }
+
+  Future<void> killedFunc() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+
+    if (initialMessage != null) {
+      await prefs.setString(
+          'cold_start_message', initialMessage.data.toString());
+      String? url = initialMessage.data['target_url'];
+      Timer(const Duration(seconds: 4), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebViewWithBottomNav(
+              initialUrl: url,
+            ),
+          ),
+        );
+      });
+      // _handleMessage(initialMessage);
+    } else {
+      Timer(const Duration(seconds: 3), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const WebViewWithBottomNav(),
+          ),
+        );
+      });
+      // await prefs.setString('cold_start_message', 'No initial message');
+    }
+  }
+
+  Future<void> checkColdStartLog() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? message = prefs.getString('cold_start_message');
     try {
@@ -454,17 +479,20 @@ class _SplashScreenState extends State<SplashScreen> {
           final key = parts[0].trim();
           final value = parts[1].trim();
           if (key == 'target_url') {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WebViewWithBottomNav(
-                  initialUrl: value,
+            Timer(const Duration(seconds: 3), () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WebViewWithBottomNav(
+                    initialUrl: value,
+                  ),
                 ),
-              ),
+              );
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Target URL: $value')),
             );
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(content: Text('Target URL: $value')),
-            // );
             if (kDebugMode) print('Target URL: $value');
           } else {
             Timer(const Duration(seconds: 3), () {
@@ -480,7 +508,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } else {
         Timer(const Duration(seconds: 3), () {
           Navigator.pushReplacement(
-          context,
+            context,
             MaterialPageRoute(
               builder: (context) => const WebViewWithBottomNav(),
             ),
@@ -882,86 +910,91 @@ class _WebViewWithBottomNavState extends State<WebViewWithBottomNav> {
 
 Future<bool> showExitConfirmationDialog(BuildContext context) async {
   return await showDialog(
-    context: context,
-    builder: (context) => BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-      child: Dialog(
-        backgroundColor: Colors.white.withOpacity(0.2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: Colors.white.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.4),
-                Colors.white.withOpacity(0.1),
-              ],
+        context: context,
+        builder: (context) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Dialog(
+            backgroundColor: Colors.white.withOpacity(0.2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.power_settings_new, size: 48, color: Colors.white),
-              const SizedBox(height: 16),
-              const Text(
-                'Exit App?',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.4),
+                    Colors.white.withOpacity(0.1),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Are you sure you want to close the application?',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                      ),
+                  const Icon(Icons.power_settings_new,
+                      size: 48, color: Colors.white),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Exit App?',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    child: const Text('CANCEL'),
                   ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () => SystemNavigator.pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.7),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Are you sure you want to close the application?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                                color: Colors.white.withOpacity(0.3)),
+                          ),
+                        ),
+                        child: const Text('CANCEL'),
                       ),
-                    ),
-                    child: const Text('EXIT'),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () => SystemNavigator.pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.7),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('EXIT'),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-  ) ?? false;
+      ) ??
+      false;
 }
